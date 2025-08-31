@@ -11,14 +11,15 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/Subscription")
+@CrossOrigin(origins = "http://localhost:5173")
 public class SubscriptionController {
 
-   private final SubscriptionServiceImpl subscriptionPaymentService;
+    private final SubscriptionServiceImpl subscriptionPaymentService;
     private final ProUserServiceImpl proUserService;
     private final BusinessUserServiceImpl businessUserService;
 
     @Autowired
-    public SubscriptionPaymentController(SubscriptionServiceImpl subscriptionPaymentService,
+    public SubscriptionController(SubscriptionServiceImpl subscriptionPaymentService,
                                          ProUserServiceImpl proUserService,
                                          BusinessUserServiceImpl businessUserService) {
         this.subscriptionPaymentService = subscriptionPaymentService;

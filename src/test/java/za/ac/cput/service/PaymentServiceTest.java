@@ -32,11 +32,18 @@ public class PaymentServiceTest {
     @Autowired
     private BasicUserService basicUserService;
 
+    @Autowired
+    private ProUserServiceImpl proUserService;
+
     private BusinessUser businessUser;
     private BasicUser basicUser;
-    private Car car;
+    private ProUser proUser;
+    private Car businessCar;
+    private Car proCar;
     private Booking booking;
+    private Booking proBooking;
     private Payment payment;
+    private Payment proPayment;
 
     @BeforeEach
     void setUp() {
@@ -58,10 +65,9 @@ public class PaymentServiceTest {
                 "JD Motors",
                 "BR123456"
         );
-
         businessUser = businessUserService.save(businessUser);
 
-        car = CarFactory.create(
+        businessCar = CarFactory.create(
                 new byte[10],
                 "Toyota",
                 "Corolla",
@@ -77,7 +83,7 @@ public class PaymentServiceTest {
                 businessUser,
                 null
         );
-        car = carService.save(car);
+        businessCar = carService.save(businessCar);
 
         basicUser = BasicUserFactory.create(
                 "Alice",
@@ -98,7 +104,7 @@ public class PaymentServiceTest {
                 BigDecimal.valueOf(2000),
                 BookingStatus.PENDING,
                 basicUser,
-                car
+                businessCar
         );
         booking = bookingService.save(booking);
 
@@ -117,6 +123,67 @@ public class PaymentServiceTest {
                 null
         );
         payment = paymentService.save(payment);
+
+        proUser = ProUserFactory.create(
+                "Bob",
+                "Smith",
+                "bobPro",
+                "password",
+                "bob.pro@example.com",
+                "0831234567",
+                LocalDate.of(1988, 2, 2),
+                "2345678901234",
+                true,
+                "ABSA",
+                "Bob Smith",
+                654321,
+                "Savings"
+        );
+        proUser = proUserService.save(proUser);
+
+        proCar = CarFactory.create(
+                null,
+                "Honda",
+                "Civic",
+                "Sedan",
+                BigDecimal.valueOf(600),
+                5,
+                400f,
+                1.8f,
+                "Manual",
+                "Sporty car",
+                "Cape Town",
+                true,
+                null,
+                proUser
+        );
+        proCar = carService.save(proCar);
+
+        proBooking = BookingFactory.create(
+                LocalDate.of(2025, 10, 1),
+                LocalDate.of(2025, 10, 5),
+                BigDecimal.valueOf(2500),
+                BookingStatus.PENDING,
+                basicUser,
+                proCar
+        );
+        proBooking = bookingService.save(proBooking);
+
+        proPayment = PaymentFactory.create(
+                87654321,
+                "Alice Smith",
+                LocalDate.of(2025, 12, 31),
+                "456",
+                BigDecimal.valueOf(1500),
+                LocalDate.now(),
+                LocalTime.now(),
+                PaymentStatus.PENDING,
+                basicUser,
+                proBooking,
+                null,
+                proUser
+        );
+        proPayment = paymentService.save(proPayment);
     }
 
     @Test
@@ -126,6 +193,11 @@ public class PaymentServiceTest {
         assertEquals(BigDecimal.valueOf(1000), payment.getAmount());
         assertEquals(basicUser.getUserId(), payment.getUser().getUserId());
         assertEquals(businessUser.getUserId(), payment.getBusinessUser().getUserId());
+
+        assertNotNull(proPayment);
+        assertEquals(BigDecimal.valueOf(1500), proPayment.getAmount());
+        assertEquals(basicUser.getUserId(), proPayment.getUser().getUserId());
+        assertEquals(proUser.getUserId(), proPayment.getProUser().getUserId());
     }
 
     @Test
@@ -169,5 +241,24 @@ public class PaymentServiceTest {
     void testDeletePayment() {
         paymentService.deleteById(payment.getPaymentId());
         assertThrows(RuntimeException.class, () -> paymentService.findById(payment.getPaymentId()));
+    }
+     @Test
+    void testFindPaymentsByBasicUserId() {
+        List<Payment> payments = paymentService.findPaymentsByBasicUserId(basicUser.getUserId());
+        assertFalse(payments.isEmpty());
+        assertEquals(basicUser.getUserId(), payments.get(0).getUser().getUserId());
+    }
+
+    @Test
+    void testFindPaymentsByProUserId() {
+        List<Payment> payments = paymentService.findPaymentsByProUserId(0L);
+        assertTrue(payments.isEmpty());
+    }
+
+    @Test
+    void testFindPaymentsByBusinessUserId() {
+        List<Payment> payments = paymentService.findPaymentsByBusinessUserId(businessUser.getUserId());
+        assertFalse(payments.isEmpty());
+        assertEquals(businessUser.getUserId(), payments.get(0).getBusinessUser().getUserId());
     }
 }

@@ -2,14 +2,19 @@ package za.ac.cput.controller;
 
 import za.ac.cput.domain.BasicUser;
 import za.ac.cput.domain.Booking;
+import za.ac.cput.domain.BookingStatus;
 import za.ac.cput.domain.Car;
 import za.ac.cput.service.BookingService;
 import za.ac.cput.service.CarServiceImpl;
 import za.ac.cput.service.BasicUserService;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.ResponseEntity;
+import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
+
+import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/bookings")
@@ -21,66 +26,74 @@ public class BookingController {
     private final CarServiceImpl carService;
 
     @Autowired
-    public BookingController(BookingService bookingService, BasicUserService basicUserService, CarServiceImpl carService) {
+    public BookingController(BookingService bookingService, BasicUserService basicUserService,
+            CarServiceImpl carService) {
         this.bookingService = bookingService;
         this.basicUserService = basicUserService;
         this.carService = carService;
     }
 
-    @PostMapping("/create")
-    public ResponseEntity<Booking> createBooking(@RequestParam Long userId, @RequestParam Long carId, @RequestBody Booking bookingRequest) {
-        BasicUser user = basicUserService.findById(userId);
-        Car car = carService.findById(carId);
+    @PostMapping
+    public Booking save(@RequestBody Map<String, Object> payload) {
+        BasicUser user = basicUserService.findById(Long.valueOf(payload.get("userId").toString()));
+        Car car = carService.findById(Long.valueOf(payload.get("carId").toString()));
 
         Booking booking = new Booking.Builder()
-                .setStartDate(bookingRequest.getStartDate())
-                .setEndDate(bookingRequest.getEndDate())
-                .setTotalPrice(bookingRequest.getTotalPrice())
-                .setCar(car)
-                .setBookingStatus(bookingRequest.getBookingStatus())
+                .setStartDate(LocalDate.parse(payload.get("startDate").toString()))
+                .setEndDate(LocalDate.parse(payload.get("endDate").toString()))
+                .setTotalPrice(new BigDecimal(payload.get("totalPrice").toString()))
+                .setBookingStatus(BookingStatus.valueOf(payload.get("bookingStatus").toString()))
                 .setUser(user)
+                .setCar(car)
                 .build();
 
-        Booking savedBooking = bookingService.save(booking);
-        return ResponseEntity.ok(savedBooking);
+        return bookingService.save(booking);
     }
 
-@PatchMapping("/{id}")
-    public ResponseEntity<Booking> updateBooking(@PathVariable Long id,
-                                                 @RequestBody Booking updates) {
-        Booking updatedBooking = bookingService.update(id, updates);
-        return ResponseEntity.ok(updatedBooking);
+    @PatchMapping("/{id}")
+    public Booking updateBooking(@PathVariable Long id, @RequestBody Booking updates) {
+        return bookingService.update(id, updates);
     }
-    
+
     @GetMapping("/{id}")
-    public ResponseEntity<Booking> findById(@PathVariable Long id) {
-        return ResponseEntity.ok(bookingService.findById(id));
+    public Booking findById(@PathVariable Long id) {
+        return bookingService.findById(id);
     }
 
     @GetMapping
-    public ResponseEntity<List<Booking>> findAll() {
-        return ResponseEntity.ok(bookingService.findAll());
+    public List<Booking> findAll() {
+        return bookingService.findAll();
     }
 
     @PostMapping("/{id}/cancel")
-    public ResponseEntity<Booking> cancelBooking(@PathVariable Long id) {
+    public Booking cancelBooking(@PathVariable Long id) {
         Booking booking = bookingService.findById(id);
         booking.cancelBooking();
         bookingService.save(booking);
-        return ResponseEntity.ok(booking);
+        return booking;
     }
 
     @PostMapping("/{id}/confirm")
-    public ResponseEntity<Booking> confirmBooking(@PathVariable Long id) {
+    public Booking confirmBooking(@PathVariable Long id) {
         Booking booking = bookingService.findById(id);
         booking.confirmBooking();
         bookingService.save(booking);
-        return ResponseEntity.ok(booking);
+        return booking;
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deleteBooking(@PathVariable Long id) {
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void deleteBooking(@PathVariable Long id) {
         bookingService.deleteById(id);
-        return ResponseEntity.noContent().build();
+    }
+
+    @GetMapping("/proUser/{proUserId}")
+    public List<Booking> getBookingsByProUser(@PathVariable Long proUserId) {
+        return bookingService.findBookingsByProUserId(proUserId);
+    }
+
+    @GetMapping("/businessUser/{businessUserId}")
+    public List<Booking> getBookingsByBusinessUser(@PathVariable Long businessUserId) {
+        return bookingService.findBookingsByBusinessUserId(businessUserId);
     }
 }

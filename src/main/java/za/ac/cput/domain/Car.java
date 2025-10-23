@@ -30,13 +30,14 @@ public class Car {
     private String collectionLocation;
     private Boolean isAvailable = true;
 
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "pro_user_id", nullable = true)
     @JsonBackReference
     private ProUser proUser;
 
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "business_user_id", nullable = true)
+    @JsonBackReference("businessUser-cars")
     private BusinessUser businessUser;
 
     protected Car() {}
